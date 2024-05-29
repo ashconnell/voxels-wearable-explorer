@@ -35,6 +35,9 @@
           U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC,
           U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
       }
+      * {
+        min-width: 0;
+      }
       html,
       body {
         box-sizing: border-box;
@@ -110,6 +113,22 @@
         position: absolute;
         inset: 0;
         display: flex;
+        transform: scale(0.9);
+        transition: transform 0.3s ease-out;
+      }
+      .appm-list.visible {
+        transform: scale(1);
+      }
+      .appm-shade {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease-out;
+      }
+      .appm-shade.visible {
+        opacity: 1;
       }
       .appm-details {
         position: absolute;
@@ -131,25 +150,39 @@
         flex-direction: column;
       }
       .list-head {
-        height: 50px;
         display: flex;
         align-items: center;
-        padding: 0 16px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 16px 16px 10px;
       }
       .list-search {
-        margin-right: 8px;
-      }
-      .list-input {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        padding: 0 8px;
+        height: 40px;
+        display: flex;
+        align-items: center;
         flex: 1;
       }
-      .list-clear {
+      .list-search-icon {
+        margin-right: 6px;
+      }
+      .list-search-input {
+        flex: 1;
+      }
+      .list-search-clear {
         margin-left: 8px;
         cursor: pointer;
       }
       .list-random {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        width: 40px;
+        height: 40px;
         margin-left: 8px;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .list-body {
         flex: 1;
@@ -158,43 +191,52 @@
       }
       .list-inner {
         position: absolute;
-        inset: 0;
+        inset: 0 12px;
+      }
+      .list-scroll {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
       .item {
         display: flex;
-        align-items: center;
-        padding: 2px 12px;
+        padding: 4px;
       }
-      .item:hover {
+      .item-inner {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 10px;
+      }
+      .item:hover:not(.selected) .item-inner {
         cursor: pointer;
         background: rgba(0, 0, 0, 0.03);
       }
-      .item.selected {
-        border-right: 3px solid black;
+      .item.selected .item-inner {
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        border-color: rgba(0, 0, 0, 0.1);
       }
       .item-img {
-        width: 70px;
-        height: 70px;
+        width: 64px;
+        height: 64px;
         flex-shrink: 0;
-        margin-right: 8px;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
       }
       .item-info {
         flex: 1;
-        min-width: 0;
       }
       .item-name {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-weight: 600;
-        margin: 0 0 4px;
-      }
-      .item-desc {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
         font-size: 14px;
-        color: rgba(0, 0, 0, 0.7);
+        width: 100%;
+        text-align: center;
+        padding: 0 8px;
       }
       .preview {
         flex: 1;
@@ -221,23 +263,45 @@
       }
       .details-head {
         display: flex;
-        padding: 20px;
+        padding: 16px;
         position: sticky;
         top: 0px;
         z-index: 1;
         background: white;
+        display: flex;
+        align-items: center;
       }
-      .details-back {
-        margin-right: 8px;
+      .details-head-side {
+        width: 60px;
+        display: flex;
+      }
+      .details-head-side.right {
+        justify-content: flex-end;
+      }
+      .details-head-btn {
+        width: 40px;
+        height: 40px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .details-head-btn.close {
         cursor: pointer;
       }
       @media all and (min-width: 1000px) {
-        .details-back {
+        .details-head-btn.close {
           display: none;
         }
       }
       .details-name {
         flex: 1;
+        text-align: center;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
       }
       .details-external {
         margin-left: 8px;
@@ -284,13 +348,41 @@
         color: #227eff;
         cursor: pointer;
       }
+      .details-foot {
+        display: flex;
+        justify-content: center;
+        background: white;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 16px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+      }
+      .details-foot-btn {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        margin: 0 4px;
+        cursor: pointer;
+      }
+      @media all and (min-width: 1000px) {
+        .details-foot {
+          display: none;
+        }
+      }
     </style>
 
     <!-- app -->
 
     <script type="text/babel" data-presets="env,react">
       const { useRef, useEffect, useLayoutEffect, useState, useMemo } = React;
-      const { FixedSizeList } = window.ReactWindow;
+      const { FixedSizeGrid } = window.ReactWindow;
 
       const url = new URL(window.location.href);
       const params = url.searchParams;
@@ -316,18 +408,24 @@
           };
         }, []);
         if (!current && !mobile) current = wearables[0];
+        const results = useMemo(() => {
+          if (!query) return wearables;
+          return filterByQuery(wearables, query);
+        }, [query]);
 
         if (mobile) {
           return (
             <div className="appm">
-              <div className="appm-list">
+              <div className={cls("appm-list", { visible: !current })}>
                 <List
                   query={query}
                   setQuery={setQuery}
+                  results={results}
                   current={current}
                   onSelect={setCurrent}
                 />
               </div>
+              <div className={cls("appm-shade", { visible: current })} />
               <div className={cls("appm-details", { visible: current })}>
                 {current && (
                   <Details
@@ -338,6 +436,29 @@
                       setQuery(query);
                     }}
                     usePreview
+                    goPrevious={() => {
+                      console.log("hi");
+                      let idx = results.indexOf(current);
+                      console.log({ idx });
+                      idx--;
+                      if (idx < 0) return;
+                      const wearable = results[idx];
+                      setCurrent(wearable);
+                      setParam("id", wearable.id);
+                    }}
+                    goRandom={() => {
+                      const wearable = pickRandom(results);
+                      setCurrent(wearable);
+                      setParam("id", wearable.id);
+                    }}
+                    goNext={() => {
+                      let idx = results.indexOf(current);
+                      idx++;
+                      if (idx > results.length - 1) return;
+                      const wearable = results[idx];
+                      setCurrent(wearable);
+                      setParam("id", wearable.id);
+                    }}
                   />
                 )}
               </div>
@@ -351,6 +472,7 @@
               <List
                 query={query}
                 setQuery={setQuery}
+                results={results}
                 current={current}
                 onSelect={setCurrent}
               />
@@ -369,57 +491,56 @@
         );
       }
 
-      function List({ query, setQuery, current, onSelect }) {
-        const rootRef = useRef();
+      function List({ query, setQuery, results, current, onSelect }) {
+        const innerRef = useRef();
         const listRef = useRef();
         const [size, setSize] = useState([0, 0]);
-        const results = useMemo(() => {
-          if (!query) return wearables;
-          return filterByQuery(wearables, query);
-        }, [query]);
         useEffect(() => {
           if (!current) return;
           const idx = results.indexOf(current);
           listRef.current.scrollToItem(idx, "start");
         }, []);
         useLayoutEffect(() => {
-          const root = rootRef.current;
+          const inner = innerRef.current;
           const onResize = () => {
-            setSize([root.offsetWidth, root.offsetHeight]);
+            setSize([inner.offsetWidth, inner.offsetHeight]);
           };
           const resizer = new ResizeObserver(() => {
             onResize();
           });
-          resizer.observe(rootRef.current);
+          resizer.observe(innerRef.current);
           onResize();
         }, []);
+        const numColumns = Math.round(size[0] / 100);
+        const cellSize = size[0] / numColumns;
         return (
-          <div className="list" ref={rootRef}>
-            <label className="list-head">
-              <SearchIcon className="list-search" size={22} />
-              <input
-                className="list-input"
-                placeholder="Search"
-                type="text"
-                value={query}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setQuery(value);
-                  setParam("q", value);
-                }}
-              />
-              {query && (
-                <ClearIcon
-                  className="list-clear"
-                  size={20}
-                  onClick={() => {
-                    setQuery("");
-                    setParam("q", null);
+          <div className="list">
+            <div className="list-head">
+              <label className="list-search">
+                <SearchIcon className="list-search-icon" size={18} />
+                <input
+                  className="list-search-input"
+                  placeholder="Search"
+                  type="text"
+                  value={query}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setQuery(value);
+                    setParam("q", value);
                   }}
                 />
-              )}
-              <DiceIcon
-                size={22}
+                {query && (
+                  <ClearIcon
+                    className="list-search-clear"
+                    size={20}
+                    onClick={() => {
+                      setQuery("");
+                      setParam("q", null);
+                    }}
+                  />
+                )}
+              </label>
+              <div
                 className="list-random"
                 onClick={(e) => {
                   e.preventDefault();
@@ -427,51 +548,70 @@
                   onSelect(wearable);
                   setParam("id", wearable.id);
                   const idx = results.indexOf(wearable);
-                  listRef.current.scrollToItem(idx, "start");
+                  const rowIndex = Math.floor(idx / numColumns);
+                  const columnIndex = idx % numColumns;
+                  listRef.current.scrollToItem({
+                    align: "start",
+                    rowIndex,
+                    columnIndex,
+                  });
                 }}
-              />
-            </label>
+              >
+                <DiceIcon size={20} />
+              </div>
+            </div>
             <div className="list-body">
-              <div className="list-inner">
-                <FixedSizeList
+              <div className="list-inner" ref={innerRef}>
+                <FixedSizeGrid
+                  className="list-scroll"
                   ref={listRef}
                   width={size[0]}
                   height={size[1]}
-                  itemCount={results.length}
-                  itemSize={74} // must match inflow for perf
+                  columnCount={numColumns}
+                  columnWidth={size[0] / numColumns}
+                  rowCount={Math.ceil(results.length / numColumns)}
+                  rowHeight={size[0] / numColumns}
                 >
-                  {({ index, style }) => (
+                  {({ columnIndex, rowIndex, style }) => (
                     <Item
                       style={style}
-                      wearable={results[index]}
-                      selected={current === results[index]}
+                      wearable={results[rowIndex * numColumns + columnIndex]}
+                      selected={
+                        current === results[rowIndex * numColumns + columnIndex]
+                      }
                       onClick={() => {
-                        const wearable = results[index];
+                        const wearable =
+                          results[rowIndex * numColumns + columnIndex];
                         onSelect(wearable);
                         setParam("id", wearable.id);
                       }}
                     />
                   )}
-                </FixedSizeList>
+                </FixedSizeGrid>
               </div>
             </div>
           </div>
         );
       }
 
+      const imgLoaded = new Set();
       function Item({ wearable, selected, style, onClick }) {
+        if (!wearable) return null; // empty cells
         const imgRef = useRef();
         useEffect(() => {
-          const img = getImg(wearable.image, false);
-          if (img) {
-            imgRef.current.appendChild(img);
+          const elem = imgRef.current;
+          const url = `url(${wearable.image})`;
+          const loaded = imgLoaded.has(url);
+          // console.log(loaded, url);
+          if (loaded) {
+            elem.style.backgroundImage = url;
             return;
           }
           let dead;
           setTimeout(() => {
             if (dead) return;
-            const img = getImg(wearable.image, true);
-            imgRef.current.appendChild(img);
+            elem.style.backgroundImage = url;
+            imgLoaded.add(url);
           }, 300);
           return () => {
             dead = true;
@@ -483,10 +623,9 @@
             style={style}
             onClick={onClick}
           >
-            <div className="item-img" ref={imgRef} />
-            <div className="item-info">
+            <div className="item-inner">
+              <div className="item-img" ref={imgRef} />
               <div className="item-name">{wearable.name}</div>
-              <div className="item-desc">{wearable.description}</div>
             </div>
           </div>
         );
@@ -504,7 +643,6 @@
         useEffect(() => {
           setLoading(true);
         }, [current]);
-        console.log("current", current);
         return (
           <div className="preview">
             <model-viewer
@@ -532,7 +670,15 @@
         );
       }
 
-      function Details({ current, onSelect, setQuery, usePreview }) {
+      function Details({
+        current,
+        onSelect,
+        setQuery,
+        usePreview,
+        goPrevious,
+        goRandom,
+        goNext,
+      }) {
         const attributes = [
           {
             label: "Rarity",
@@ -563,17 +709,16 @@
         return (
           <div className="details">
             <div className="details-head">
-              <div className="details-back" onClick={() => onSelect(null)}>
-                <BackIcon />
-              </div>
+              <div className="details-head-side left"></div>
               <div className="details-name">{current.name}</div>
-              <a
-                className="details-external"
-                href={current.externalUrl}
-                target="_blank"
-              >
-                <ExternalIcon size={20} />
-              </a>
+              <div className="details-head-side right">
+                <div
+                  className="details-head-btn close"
+                  onClick={() => onSelect(null)}
+                >
+                  <CloseIcon size={20} />
+                </div>
+              </div>
             </div>
             <div className="details-body">
               {usePreview && (
@@ -609,6 +754,23 @@
                   <div className="details-attr-value">{current[attr.key]}</div>
                 </div>
               ))}
+            </div>
+            <div className="details-foot">
+              <div
+                className="details-foot-btn"
+                onClick={() => {
+                  console.log("XX");
+                  goPrevious();
+                }}
+              >
+                <PreviousIcon />
+              </div>
+              <div className="details-foot-btn" onClick={goRandom}>
+                <DiceIcon />
+              </div>
+              <div className="details-foot-btn" onClick={goNext}>
+                <NextIcon />
+              </div>
             </div>
           </div>
         );
@@ -699,7 +861,26 @@
         );
       }
 
-      function BackIcon({ size = 24, ...props }) {
+      function CloseIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        );
+      }
+
+      function PreviousIcon({ size = 24, ...props }) {
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -714,6 +895,25 @@
           >
             <path d="m12 19-7-7 7-7" />
             <path d="M19 12H5" />
+          </svg>
+        );
+      }
+
+      function NextIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
           </svg>
         );
       }
