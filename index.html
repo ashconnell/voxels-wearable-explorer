@@ -139,6 +139,8 @@
         border-radius: 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
         transition: all 0.3s ease-out;
+        display: flex;
+        flex-direction: column;
       }
       .appm-details.visible {
         transform: translateY(0%);
@@ -260,6 +262,8 @@
       }
       .details {
         flex: 1;
+        display: flex;
+        flex-direction: column;
       }
       .details-head {
         display: flex;
@@ -307,6 +311,7 @@
         margin-left: 8px;
       }
       .details-body {
+        flex: 1;
         padding: 0 20px 20px;
       }
       .details-preview {
@@ -352,12 +357,10 @@
         display: flex;
         justify-content: center;
         background: white;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
         padding: 16px;
         box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+        position: sticky;
+        bottom: 0;
       }
       .details-foot-btn {
         flex-shrink: 0;
