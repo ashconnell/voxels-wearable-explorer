@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CryptoVoxels Wearables</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="preload"
+      href="/rubik.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <script
+      type="module"
+      src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-window@1.8.10/dist/index-prod.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.5/babel.min.js"></script>
+    <script src="/wearables.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <style>
+      @font-face {
+        /* latin */
+        font-family: "Rubik";
+        font-style: normal;
+        font-weight: 300 900;
+        font-display: swap;
+        src: url(/rubik.woff2) format("woff2");
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+          U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC,
+          U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      html,
+      body {
+        box-sizing: border-box;
+        -webkit-font-smoothing: antialiased;
+        font-family: "Rubik", sans-serif;
+        font-optical-sizing: auto;
+        font-size: 16px;
+        font-weight: 400;
+        font-style: normal;
+      }
+      input,
+      textarea {
+        border: 0;
+        background: none;
+        outline: 0;
+        padding: 0;
+        margin: 0;
+        display: block;
+        width: 100%;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+      }
+      input::placeholder,
+      textarea::placeholder {
+        color: #bebebe;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+      .appd {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: stretch;
+      }
+      .appd-list {
+        width: 300px;
+        box-shadow: 5px 0px 10px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        display: flex;
+      }
+      .appd-preview {
+        flex: 1;
+        display: flex;
+      }
+      .appd-details {
+        width: 400px;
+        box-shadow: -5px 0px 10px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        display: flex;
+        overflow-y: auto;
+      }
+      .appm {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .appm-list {
+        position: absolute;
+        inset: 0;
+        display: flex;
+      }
+      .appm-details {
+        position: absolute;
+        inset: 0;
+        overflow-y: auto;
+        background: white;
+        transform: translateY(100%);
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+        transition: all 0.3s ease-out;
+      }
+      .appm-details.visible {
+        transform: translateY(0%);
+        border-radius: 0px;
+      }
+      .list {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .list-head {
+        height: 50px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      }
+      .list-search {
+        margin-right: 8px;
+      }
+      .list-input {
+        flex: 1;
+      }
+      .list-clear {
+        margin-left: 8px;
+        cursor: pointer;
+      }
+      .list-random {
+        margin-left: 8px;
+        cursor: pointer;
+      }
+      .list-body {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+      }
+      .list-inner {
+        position: absolute;
+        inset: 0;
+      }
+      .item {
+        display: flex;
+        align-items: center;
+        padding: 2px 12px;
+      }
+      .item:hover {
+        cursor: pointer;
+        background: rgba(0, 0, 0, 0.03);
+      }
+      .item.selected {
+        border-right: 3px solid black;
+      }
+      .item-img {
+        width: 70px;
+        height: 70px;
+        flex-shrink: 0;
+        margin-right: 8px;
+      }
+      .item-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .item-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 600;
+        line-height: 1;
+        margin: 0 0 4px;
+      }
+      .item-desc {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.7);
+      }
+      .preview {
+        flex: 1;
+        position: relative;
+      }
+      .preview-mv {
+        width: 100%;
+        height: 100%;
+        transition: opacity 0.15s ease-out;
+      }
+      .preview-mv.loading {
+        opacity: 0.3;
+      }
+      .preview-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+      .details {
+        flex: 1;
+      }
+      .details-head {
+        display: flex;
+        padding: 20px;
+        position: sticky;
+        top: 0px;
+        z-index: 1;
+        background: white;
+      }
+      .details-back {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+      @media all and (min-width: 1000px) {
+        .details-back {
+          display: none;
+        }
+      }
+      .details-name {
+        flex: 1;
+      }
+      .details-external {
+        margin-left: 8px;
+      }
+      .details-body {
+        padding: 0 20px 20px;
+      }
+      .details-preview {
+        height: 400px;
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        margin: 0 0 20px;
+      }
+      .details-img {
+        padding-bottom: 100%;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        margin: 0 0 20px;
+      }
+      .details-name {
+        font-size: 21px;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+      .details-desc {
+        line-height: 1.3;
+        margin: 0 0 20px;
+      }
+      .details-attr {
+        margin: 0 0 12px;
+        display: flex;
+      }
+      .details-attr-name {
+        font-weight: 600;
+        line-height: 1;
+        width: 100px;
+      }
+      .details-attr-value {
+        word-break: break-all;
+        color: #227eff;
+        cursor: pointer;
+      }
+    </style>
+
+    <!-- app -->
+
+    <script type="text/babel" data-presets="env,react">
+      const { useRef, useEffect, useLayoutEffect, useState, useMemo } = React;
+      const { FixedSizeList } = window.ReactWindow;
+
+      const url = new URL(window.location.href);
+      const params = url.searchParams;
+      const initialQuery = params.get("q") || "";
+      const initialId = params.get("id");
+      const initialSelected = getWearable(initialId);
+
+      buildWearableKeywords();
+
+      ReactDOM.render(<App />, document.getElementById("root"));
+
+      function App() {
+        const [query, setQuery] = useState(initialQuery);
+        let [current, setCurrent] = useState(initialSelected);
+        const [mobile, setMobile] = useState(window.innerWidth <= 1000);
+        useEffect(() => {
+          const onResize = () => {
+            setMobile(window.innerWidth <= 1000);
+          };
+          window.addEventListener("resize", onResize);
+          return () => {
+            window.removeEventListener("resize", onResize);
+          };
+        }, []);
+        if (!current && !mobile) current = wearables[0];
+
+        if (mobile) {
+          return (
+            <div className="appm">
+              <div className="appm-list">
+                <List
+                  query={query}
+                  setQuery={setQuery}
+                  current={current}
+                  onSelect={setCurrent}
+                />
+              </div>
+              <div className={cls("appm-details", { visible: current })}>
+                {current && (
+                  <Details
+                    current={current}
+                    onSelect={setCurrent}
+                    setQuery={(query) => {
+                      setCurrent(null);
+                      setQuery(query);
+                    }}
+                    usePreview
+                  />
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="appd">
+            <div className="appd-list">
+              <List
+                query={query}
+                setQuery={setQuery}
+                current={current}
+                onSelect={setCurrent}
+              />
+            </div>
+            <div className="appd-preview">
+              <Preview current={current} />
+            </div>
+            <div className="appd-details">
+              <Details
+                current={current}
+                onSelect={setCurrent}
+                setQuery={setQuery}
+              />
+            </div>
+          </div>
+        );
+      }
+
+      function List({ query, setQuery, current, onSelect }) {
+        const rootRef = useRef();
+        const listRef = useRef();
+        const [size, setSize] = useState([0, 0]);
+        const results = useMemo(() => {
+          if (!query) return wearables;
+          return filterByQuery(wearables, query);
+        }, [query]);
+        useEffect(() => {
+          if (!current) return;
+          const idx = results.indexOf(current);
+          listRef.current.scrollToItem(idx, "start");
+        }, []);
+        useLayoutEffect(() => {
+          const root = rootRef.current;
+          const onResize = () => {
+            setSize([root.offsetWidth, root.offsetHeight]);
+          };
+          const resizer = new ResizeObserver(() => {
+            onResize();
+          });
+          resizer.observe(rootRef.current);
+          onResize();
+        }, []);
+        return (
+          <div className="list" ref={rootRef}>
+            <label className="list-head">
+              <SearchIcon className="list-search" size={22} />
+              <input
+                className="list-input"
+                placeholder="Search"
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setQuery(value);
+                  setParam("q", value);
+                }}
+              />
+              {query && (
+                <ClearIcon
+                  className="list-clear"
+                  size={20}
+                  onClick={() => {
+                    setQuery("");
+                    setParam("q", null);
+                  }}
+                />
+              )}
+              <DiceIcon
+                size={22}
+                className="list-random"
+                onClick={() => {
+                  const wearable = pickRandom(results);
+                  onSelect(wearable);
+                  setParam("id", wearable.id);
+                  const idx = results.indexOf(wearable);
+                  listRef.current.scrollToItem(idx, "start");
+                }}
+              />
+            </label>
+            <div className="list-body">
+              <div className="list-inner">
+                <FixedSizeList
+                  ref={listRef}
+                  width={size[0]}
+                  height={size[1]}
+                  itemCount={results.length}
+                  itemSize={74} // must match inflow for perf
+                >
+                  {({ index, style }) => (
+                    <Item
+                      style={style}
+                      wearable={results[index]}
+                      selected={current === results[index]}
+                      onClick={() => {
+                        const wearable = results[index];
+                        onSelect(wearable);
+                        setParam("id", wearable.id);
+                      }}
+                    />
+                  )}
+                </FixedSizeList>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function Item({ wearable, selected, style, onClick }) {
+        const imgRef = useRef();
+        useEffect(() => {
+          const img = getImg(wearable.image, false);
+          if (img) {
+            imgRef.current.appendChild(img);
+            return;
+          }
+          let dead;
+          setTimeout(() => {
+            if (dead) return;
+            const img = getImg(wearable.image, true);
+            imgRef.current.appendChild(img);
+          }, 300);
+          return () => {
+            dead = true;
+          };
+        }, []);
+        return (
+          <div
+            className={cls("item", { selected })}
+            style={style}
+            onClick={onClick}
+          >
+            <div className="item-img" ref={imgRef} />
+            <div className="item-info">
+              <div className="item-name">{wearable.name}</div>
+              <div className="item-desc">{wearable.description}</div>
+            </div>
+          </div>
+        );
+      }
+
+      function Preview({ current }) {
+        const mvRef = useRef();
+        const [loading, setLoading] = useState(true);
+        useEffect(() => {
+          const viewer = mvRef.current;
+          viewer.addEventListener("load", () => {
+            setLoading(false);
+          });
+        }, []);
+        useEffect(() => {
+          setLoading(true);
+        }, [current]);
+        console.log("current", current);
+        return (
+          <div className="preview">
+            <model-viewer
+              ref={mvRef}
+              src={current.glb}
+              class={cls("preview-mv", { loading })}
+              camera-controls
+              tone-mapping="commerce"
+              exposure="1.2"
+              ar
+              xr-environment
+              shadow-intensity="1"
+              shadow-softness="1"
+              skybox-image={`https://arweave.net/ataPSsAKl_22yZYVEZVFdOk2vpFw6O2ffyrmYVxIXLs/${current.year}.jpg`}
+              skybox-height="1.4m"
+            >
+              <div slot="progress-bar" />
+            </model-viewer>
+            {loading && (
+              <div className="preview-loading">
+                <Spinner />
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      function Details({ current, onSelect, setQuery, usePreview }) {
+        const attributes = [
+          {
+            label: "Rarity",
+            key: "rarity",
+            query: { name: "rarity", key: "rarity" },
+          },
+          {
+            label: "Issues",
+            key: "issues",
+            query: { name: "issues", key: "issues" },
+          },
+          {
+            label: "Author",
+            key: "author",
+            query: { name: "author", key: "author" },
+          },
+          {
+            label: "Collection",
+            key: "collectionName",
+            query: { name: "collection", key: "collectionId" },
+          },
+          {
+            label: "Year",
+            key: "year",
+            query: { name: "year", key: "year" },
+          },
+        ];
+        return (
+          <div className="details">
+            <div className="details-head">
+              <div className="details-back" onClick={() => onSelect(null)}>
+                <BackIcon />
+              </div>
+              <div className="details-name">{current.name}</div>
+              <a
+                className="details-external"
+                href={current.externalUrl}
+                target="_blank"
+              >
+                <ExternalIcon size={20} />
+              </a>
+            </div>
+            <div className="details-body">
+              {usePreview && (
+                <div className="details-preview">
+                  <Preview current={current} />
+                </div>
+              )}
+              {!usePreview && (
+                <div
+                  className="details-img"
+                  style={{ backgroundImage: `url(${current.image})` }}
+                />
+              )}
+              <div className="details-desc">{current.description}</div>
+              {attributes.map((attr, idx) => (
+                <div
+                  key={idx}
+                  className="details-attr"
+                  onClick={() => {
+                    if (attr.query) {
+                      const name = attr.query.name;
+                      const value = current[attr.query.key];
+                      const quote = value.includes(" ");
+                      setQuery(
+                        quote
+                          ? `${attr.query.name}:"${current[attr.query.key]}"`
+                          : `${attr.query.name}:${current[attr.query.key]}`
+                      );
+                    }
+                  }}
+                >
+                  <div className="details-attr-name">{attr.label}</div>
+                  <div className="details-attr-value">{current[attr.key]}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      function SearchIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            {...props}
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        );
+      }
+
+      function DiceIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            {...props}
+          >
+            <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+            <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" />
+            <path d="M6 18h.01" />
+            <path d="M10 14h.01" />
+            <path d="M15 6h.01" />
+            <path d="M18 9h.01" />
+          </svg>
+        );
+      }
+
+      function ClearIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            {...props}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="m15 9-6 6" />
+            <path d="m9 9 6 6" />
+          </svg>
+        );
+      }
+
+      function ExternalIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" />
+            <path d="m21 3-9 9" />
+            <path d="M15 3h6v6" />
+          </svg>
+        );
+      }
+
+      function BackIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m12 19-7-7 7-7" />
+            <path d="M19 12H5" />
+          </svg>
+        );
+      }
+
+      function Spinner() {
+        return <span class="spinner"></span>;
+      }
+
+      let imgs;
+      function getImg(url, spawn = true) {
+        if (!imgs) imgs = new Map();
+        let img = imgs.get(url);
+        if (!img && spawn) {
+          img = document.createElement("img");
+          img.src = url;
+          imgs.set(url, img);
+        }
+        return img;
+      }
+
+      function pickRandom(array) {
+        return array[Math.floor(Math.random() * array.length)];
+      }
+
+      function getWearable(id) {
+        return wearables.find((wearable) => wearable.id === id);
+      }
+
+      function cls(...args) {
+        let str = "";
+        for (const arg of args) {
+          if (typeof arg === "string") {
+            str += " " + arg;
+          } else if (typeof arg === "object") {
+            for (const key in arg) {
+              const value = arg[key];
+              if (value) str += " " + key;
+            }
+          }
+        }
+        return str;
+      }
+
+      function setParam(key, value) {
+        const url = new URL(window.location.href);
+        if (value) {
+          url.searchParams.set(key, value);
+        } else {
+          url.searchParams.delete(key);
+        }
+        history.replaceState(null, "", url.toString());
+      }
+
+      function parseQuery(query) {
+        const matchers = [];
+        const regex = /(\w+:"[^"]+"|\w+:\S+|\S+)/g;
+        let match;
+        while ((match = regex.exec(query)) !== null) {
+          const part = match[0];
+          const nameValueMatch = part.match(/(\w+):("[^"]+"|\S+)/);
+          if (nameValueMatch) {
+            const name = nameValueMatch[1];
+            let value = nameValueMatch[2];
+            if (value.startsWith('"') && value.endsWith('"')) {
+              value = value.slice(1, -1); // Remove the surrounding quotes
+            }
+            matchers.push({ name, value, exact: true });
+          } else {
+            matchers.push({
+              name: "any",
+              value: part.toLowerCase(),
+              exact: false,
+            });
+          }
+        }
+        return matchers;
+      }
+
+      function filterByQuery(items, query) {
+        const matcherNamesToKey = {
+          any: "keywords",
+          issues: "issues",
+          year: "year",
+          author: "author",
+          rarity: "rarity",
+          collection: "collectionId",
+          token: "tokenId",
+        };
+        const matchers = parseQuery(query);
+        return items.filter((item) => {
+          for (const matcher of matchers) {
+            const key = matcherNamesToKey[matcher.name];
+            if (!key) return false;
+            if (matcher.exact) {
+              if (item[key] !== matcher.value) {
+                return false;
+              }
+            } else {
+              if (!item[key].includes(matcher.value)) {
+                return false;
+              }
+            }
+          }
+          return true;
+        });
+      }
+
+      function buildWearableKeywords() {
+        const keywordKeys = [
+          "name",
+          "image",
+          "description",
+          "rarity",
+          "year",
+          "author",
+          "tokenId",
+          "collectionId",
+          "collectionName",
+        ];
+        for (const wearable of wearables) {
+          const keywords = [];
+          for (const key of keywordKeys) {
+            keywords.push(wearable[key]);
+          }
+          wearable.keywords = keywords.join(" ").toLowerCase();
+        }
+      }
+    </script>
+
+    <!-- micro css-reset -->
+
+    <style>
+      html {
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+
+      body,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      ol,
+      ul {
+        margin: 0;
+        padding: 0;
+        font-weight: normal;
+      }
+
+      ol,
+      ul {
+        list-style: none;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+    </style>
+
+    <!-- spinner styles -->
+
+    <style>
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: inline-block;
+        position: relative;
+        border: 3px solid;
+        border-color: #fff #fff transparent transparent;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+      }
+      .spinner::after,
+      .spinner::before {
+        content: "";
+        box-sizing: border-box;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        border: 3px solid;
+        border-color: transparent transparent #ff3d00 #ff3d00;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        box-sizing: border-box;
+        animation: rotationBack 0.5s linear infinite;
+        transform-origin: center center;
+      }
+      .spinner::before {
+        width: 32px;
+        height: 32px;
+        border-color: #fff #fff transparent transparent;
+        animation: rotation 1.5s linear infinite;
+      }
+      @keyframes rotation {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes rotationBack {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(-360deg);
+        }
+      }
+    </style>
+  </body>
+</html>

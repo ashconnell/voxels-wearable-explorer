@@ -1,0 +1,17 @@
+{
+  "name": "voxels-wearable-explorer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm run generate && npm run start",
+    "generate": "node generate",
+    "start": "servor --reload"
+  },
+  "dependencies": {
+    "servor": "^4.0.2",
+    "unzipper": "^0.11.6"
+  },
+  "author": "",
+  "license": "ISC"
+}
