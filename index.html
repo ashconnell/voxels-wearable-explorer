@@ -72,12 +72,16 @@
       }
       .appd {
         position: absolute;
-        inset: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100vh;
+        height: -webkit-fill-available;
         display: flex;
         align-items: stretch;
       }
       .appd-list {
-        width: 300px;
+        width: 340px;
         box-shadow: 5px 0px 10px rgba(0, 0, 0, 0.2);
         z-index: 1;
         display: flex;
@@ -95,7 +99,11 @@
       }
       .appm {
         position: absolute;
-        inset: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100vh;
+        height: -webkit-fill-available;
         overflow: hidden;
       }
       .appm-list {
@@ -179,7 +187,6 @@
         overflow: hidden;
         text-overflow: ellipsis;
         font-weight: 600;
-        line-height: 1;
         margin: 0 0 4px;
       }
       .item-desc {
@@ -414,7 +421,8 @@
               <DiceIcon
                 size={22}
                 className="list-random"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   const wearable = pickRandom(results);
                   onSelect(wearable);
                   setParam("id", wearable.id);
