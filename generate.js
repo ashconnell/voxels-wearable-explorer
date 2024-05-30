@@ -24,7 +24,7 @@ async function generate() {
         });
     });
   }
-  const wearables = [];
+
   // get a list of collection id's
   let files;
   try {
@@ -36,6 +36,8 @@ async function generate() {
     .filter((file) => path.extname(file) === ".json")
     .map((file) => path.basename(file, ".json"));
   // build one big wearables array
+  const collections = [];
+  const wearables = [];
   for (const collectionId of collectionIds) {
     const file = path.join(collectionsDir, `${collectionId}.json`);
     let data;
@@ -45,7 +47,29 @@ async function generate() {
       console.error("Cannot read file: " + err);
     }
     const items = JSON.parse(data);
+    if (!items.length) {
+      // console.log("skipping collection, no wearables");
+      continue;
+    }
+    const collection = {
+      id: collectionId,
+      name: findItemTrait(items[0], "collection"),
+      // TODO: not all collections have images
+      // need to consult tmp/collection_icons_manifest.json and set null when none
+      hasImage: true,
+      // TODO: image is derived from base url and id in html file
+      // image: `https://arweave.net/YgdXdtgECPF5wcOpVgKVHqgYTVdayKGdq-KQoQS7LqY/${collectionId}.png`,
+    };
+    collections.push(collection);
     for (const item of items) {
+      // check for collection name inconsistencies
+      const collectionName = findItemTrait(item, "collection");
+      if (collection.name !== collectionName) {
+        console.log(
+          `collection name inconsistency: ${collection.name} -> ${collectionName}`
+        );
+      }
+      // make wearable
       const wearable = {};
       wearable.id = `${collectionId}_${item.id}`;
       wearable.name = item.name;
@@ -60,17 +84,16 @@ async function generate() {
       wearable.externalUrl = item.external_url;
       wearable.tokenId = item.id;
       wearable.collectionId = collectionId;
-      // TODO: not all collections have images
-      // need to consult tmp/collection_icons_manifest.json and set null when none
-      wearable.collectionImage = `https://arweave.net/YgdXdtgECPF5wcOpVgKVHqgYTVdayKGdq-KQoQS7LqY/${collectionId}.png`;
-      wearable.collectionName = findItemTrait(item, "collection");
       wearables.push(wearable);
       // TODO: accumulate and count all traits/attributes so we can see whats missing etc
     }
   }
   // create wearables.js
-  const js = `var wearables = ${JSON.stringify(wearables, null, 2)}`;
-  const outFile = path.join("./wearables.js");
+  // TODO: remove pretty print for smaller file
+  const wearablesStr = safeStringify(wearables);
+  const collectionsStr = safeStringify(collections);
+  const js = `var db = { wearables: ${wearablesStr}, collections: ${collectionsStr} }`;
+  const outFile = path.join("./db.js");
   await fs.writeFile(outFile, js, "utf-8");
 }
 
@@ -85,6 +108,18 @@ async function dirExists(path) {
   } catch {
     return false;
   }
+}
+
+function safeStringify(data) {
+  // vscode was showing ambiguous unicode characters and this fixes them
+  let str = JSON.stringify(data, null, 2);
+  // normalize newlines to \n
+  str = str.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  // replace non-breaking spaces with regular spaces
+  str = str.replace(/\u00A0/g, " ");
+  // remove other ambiguous unicode characters
+  str = str.replace(/[^\x00-\x7F]/g, "");
+  return str;
 }
 
 generate();

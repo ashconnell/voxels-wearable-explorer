@@ -2,8 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>CryptoVoxels Wearables</title>
+    <title>Voxels Wearables Explorer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" />
     <link
       rel="preload"
       href="./rubik.woff2"
@@ -11,6 +12,7 @@
       type="font/woff2"
       crossorigin="anonymous"
     />
+    <script src="./db.js"></script>
     <script
       type="module"
       src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"
@@ -19,7 +21,6 @@
     <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/react-window@1.8.10/dist/index-prod.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.5/babel.min.js"></script>
-    <script src="./wearables.js"></script>
   </head>
   <body>
     <div id="root"></div>
@@ -83,7 +84,7 @@
         display: flex;
         align-items: stretch;
       }
-      .appd-list {
+      .appd-explorer {
         width: 340px;
         box-shadow: 5px 0px 10px rgba(0, 0, 0, 0.2);
         z-index: 1;
@@ -109,14 +110,14 @@
         height: -webkit-fill-available;
         overflow: hidden;
       }
-      .appm-list {
+      .appm-explorer {
         position: absolute;
         inset: 0;
         display: flex;
         transform: scale(0.9);
         transition: transform 0.3s ease-out;
       }
-      .appm-list.visible {
+      .appm-explorer.visible {
         transform: scale(1);
       }
       .appm-shade {
@@ -155,6 +156,25 @@
         display: flex;
         align-items: center;
         padding: 16px 16px 10px;
+      }
+      .list-back {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        margin-right: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .list-logo {
+        width: 40px;
+        height: 40px;
+        margin-right: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .list-search {
         border: 1px solid rgba(0, 0, 0, 0.1);
@@ -199,11 +219,11 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
       }
-      .item {
+      .cell {
         display: flex;
         padding: 4px;
       }
-      .item-inner {
+      .cell-inner {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -212,15 +232,15 @@
         border: 1px solid transparent;
         border-radius: 10px;
       }
-      .item:hover:not(.selected) .item-inner {
+      .cell:hover:not(.selected) .cell-inner {
         cursor: pointer;
-        background: rgba(0, 0, 0, 0.03);
+        border-color: rgba(0, 0, 0, 0.1);
       }
-      .item.selected .item-inner {
+      .cell.selected .cell-inner {
         box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
         border-color: rgba(0, 0, 0, 0.1);
       }
-      .item-img {
+      .cell-img {
         width: 64px;
         height: 64px;
         flex-shrink: 0;
@@ -228,10 +248,10 @@
         background-position: center;
         background-repeat: no-repeat;
       }
-      .item-info {
+      .cell-info {
         flex: 1;
       }
-      .item-name {
+      .cell-name {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -239,6 +259,12 @@
         width: 100%;
         text-align: center;
         padding: 0 8px;
+      }
+      .cell.collection .cell-img {
+        width: 50px;
+        height: 50px;
+        margin: 0 0 5px;
+        border-radius: 10px;
       }
       .preview {
         flex: 1;
@@ -347,10 +373,11 @@
         font-weight: 600;
         line-height: 1;
         width: 100px;
+        flex-shrink: 0;
       }
       .details-attr-value {
         word-break: break-all;
-        color: #227eff;
+        color: #893aff;
         cursor: pointer;
       }
       .details-foot {
@@ -358,7 +385,7 @@
         justify-content: center;
         background: white;
         padding: 16px;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
         position: sticky;
         bottom: 0;
       }
@@ -387,20 +414,55 @@
       const { useRef, useEffect, useLayoutEffect, useState, useMemo } = React;
       const { FixedSizeGrid } = window.ReactWindow;
 
+      initCollections();
+      initWearables();
+
+      const collectionsById = {};
+      for (const collection of db.collections) {
+        collectionsById[collection.id] = collection;
+      }
+
+      const wearablesById = {};
+      for (const wearable of db.wearables) {
+        wearablesById[wearable.id] = wearable;
+      }
+
       const url = new URL(window.location.href);
       const params = url.searchParams;
-      const initialQuery = params.get("q") || "";
-      const initialId = params.get("id");
-      const initialSelected = getWearable(initialId);
 
-      buildWearableKeywords();
+      let iCollectionQuery = "";
+      if (params.get("cq")) {
+        iCollectionQuery = params.get("cq");
+      }
+      let iCollection;
+      if (params.get("cid")) {
+        iCollection = getCollection(params.get("cid"));
+      }
+      let iWearableQuery = "";
+      if (params.get("wq")) {
+        iWearableQuery = params.get("wq");
+      }
+      let iWearable;
+      if (params.get("wid")) {
+        iWearable = getWearable(params.get("wid"));
+      }
 
       ReactDOM.render(<App />, document.getElementById("root"));
 
       function App() {
-        const [query, setQuery] = useState(initialQuery);
-        let [current, setCurrent] = useState(initialSelected);
+        const [collectionQuery, setCollectionQuery] =
+          useState(iCollectionQuery);
+        const [collection, setCollection] = useState(iCollection);
+        const [wearableQuery, setWearableQuery] = useState(iWearableQuery);
+        let [wearable, setWearable] = useState(iWearable);
         const [mobile, setMobile] = useState(window.innerWidth <= 1000);
+        const collections = useMemo(() => {
+          return queryCollections(collectionQuery);
+        }, [collectionQuery]);
+        const wearables = useMemo(() => {
+          return queryWearables(collection?.id, wearableQuery);
+        }, [wearableQuery, collection?.id]);
+        if (!wearable && !mobile) wearable = wearables[0];
         useEffect(() => {
           const onResize = () => {
             setMobile(window.innerWidth <= 1000);
@@ -410,57 +472,67 @@
             window.removeEventListener("resize", onResize);
           };
         }, []);
-        if (!current && !mobile) current = wearables[0];
-        const results = useMemo(() => {
-          if (!query) return wearables;
-          return filterByQuery(wearables, query);
-        }, [query]);
-
+        useEffect(() => {
+          setParam("cid", collection?.id);
+          setParam("cq", collectionQuery);
+          setParam("wid", wearable?.id);
+          setParam("wq", wearableQuery);
+        }, [collection, collectionQuery, wearable, wearableQuery]);
         if (mobile) {
           return (
             <div className="appm">
-              <div className={cls("appm-list", { visible: !current })}>
-                <List
-                  query={query}
-                  setQuery={setQuery}
-                  results={results}
-                  current={current}
-                  onSelect={setCurrent}
-                />
-              </div>
-              <div className={cls("appm-shade", { visible: current })} />
-              <div className={cls("appm-details", { visible: current })}>
-                {current && (
-                  <Details
-                    current={current}
-                    onSelect={setCurrent}
-                    setQuery={(query) => {
-                      setCurrent(null);
-                      setQuery(query);
+              <div className={cls("appm-explorer", { visible: !wearable })}>
+                {!collection && (
+                  <CollectionExplorer
+                    collectionQuery={collectionQuery}
+                    setCollectionQuery={setCollectionQuery}
+                    collections={collections}
+                    setCollection={setCollection}
+                    wearables={wearables}
+                    setWearable={setWearable}
+                  />
+                )}
+                {collection && (
+                  <WearableExplorer
+                    back={() => {
+                      setWearableQuery("");
+                      setCollection(null);
                     }}
-                    usePreview
+                    wearableQuery={wearableQuery}
+                    setWearableQuery={setWearableQuery}
+                    wearables={wearables}
+                    wearable={wearable}
+                    setWearable={setWearable}
+                    collection={collection}
+                  />
+                )}
+              </div>
+              <div className={cls("appm-shade", { visible: wearable })} />
+              <div className={cls("appm-details", { visible: wearable })}>
+                {wearable && (
+                  <Details
+                    wearable={wearable}
+                    setWearableQuery={setWearableQuery}
+                    setWearable={setWearable}
+                    setCollection={setCollection}
+                    isMobile
                     goPrevious={() => {
-                      console.log("hi");
-                      let idx = results.indexOf(current);
-                      console.log({ idx });
+                      let idx = wearables.indexOf(wearable);
                       idx--;
                       if (idx < 0) return;
-                      const wearable = results[idx];
-                      setCurrent(wearable);
-                      setParam("id", wearable.id);
+                      const nextWearable = wearables[idx];
+                      setWearable(nextWearable);
                     }}
                     goRandom={() => {
-                      const wearable = pickRandom(results);
-                      setCurrent(wearable);
-                      setParam("id", wearable.id);
+                      const nextWearable = pickRandom(wearables);
+                      setWearable(nextWearable);
                     }}
                     goNext={() => {
-                      let idx = results.indexOf(current);
+                      let idx = wearables.indexOf(wearable);
                       idx++;
-                      if (idx > results.length - 1) return;
-                      const wearable = results[idx];
-                      setCurrent(wearable);
-                      setParam("id", wearable.id);
+                      if (idx > wearables.length - 1) return;
+                      const nextWearable = wearables[idx];
+                      setWearable(nextWearable);
                     }}
                   />
                 )}
@@ -471,74 +543,231 @@
 
         return (
           <div className="appd">
-            <div className="appd-list">
-              <List
-                query={query}
-                setQuery={setQuery}
-                results={results}
-                current={current}
-                onSelect={setCurrent}
-              />
+            <div className="appd-explorer">
+              {!collection && (
+                <CollectionExplorer
+                  collectionQuery={collectionQuery}
+                  setCollectionQuery={setCollectionQuery}
+                  collections={collections}
+                  collection={collection}
+                  setCollection={setCollection}
+                  wearables={wearables}
+                  setWearable={setWearable}
+                />
+              )}
+              {collection && (
+                <WearableExplorer
+                  back={() => {
+                    setWearableQuery("");
+                    setCollection(null);
+                  }}
+                  wearableQuery={wearableQuery}
+                  setWearableQuery={setWearableQuery}
+                  wearables={wearables}
+                  wearable={wearable}
+                  setWearable={setWearable}
+                  collection={collection}
+                />
+              )}
             </div>
             <div className="appd-preview">
-              <Preview current={current} />
+              {wearable && <Preview wearable={wearable} />}
             </div>
             <div className="appd-details">
               <Details
-                current={current}
-                onSelect={setCurrent}
-                setQuery={setQuery}
+                wearable={wearable}
+                setWearableQuery={setWearableQuery}
+                setWearable={setWearable}
+                setCollection={setCollection}
               />
             </div>
           </div>
         );
       }
 
-      function List({ query, setQuery, results, current, onSelect }) {
+      let collectionScrollTop = 0;
+      function CollectionExplorer({
+        collectionQuery,
+        setCollectionQuery,
+        collections,
+        collection,
+        setCollection,
+        wearables,
+        setWearable,
+      }) {
         const innerRef = useRef();
         const listRef = useRef();
-        const [size, setSize] = useState([0, 0]);
-        useEffect(() => {
-          if (!current) return;
-          const idx = results.indexOf(current);
-          listRef.current.scrollToItem(idx, "start");
-        }, []);
-        useLayoutEffect(() => {
-          const inner = innerRef.current;
-          const onResize = () => {
-            setSize([inner.offsetWidth, inner.offsetHeight]);
-          };
-          const resizer = new ResizeObserver(() => {
-            onResize();
-          });
-          resizer.observe(innerRef.current);
-          onResize();
-        }, []);
+        const size = useSize(innerRef);
         const numColumns = Math.round(size[0] / 100);
         const cellSize = size[0] / numColumns;
+        useEffect(() => {
+          if (!size[0]) return;
+          const list = listRef.current;
+          list.scrollTo({ scrollTop: collectionScrollTop });
+          return () => {
+            collectionScrollTop = list.state.scrollTop;
+          };
+        }, [size]);
+        // useEffect(() => {
+        //   if (!size[0]) return;
+        //   const list = listRef.current;
+        //   list.scrollTo({ scrollTop: 0 });
+        // }, [collectionQuery]);
         return (
           <div className="list">
             <div className="list-head">
+              <div className="list-logo">
+                <Logo size={38} />
+              </div>
               <label className="list-search">
                 <SearchIcon className="list-search-icon" size={18} />
                 <input
                   className="list-search-input"
-                  placeholder="Search"
+                  placeholder="Search collections"
                   type="text"
-                  value={query}
+                  value={collectionQuery}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setQuery(value);
-                    setParam("q", value);
+                    setCollectionQuery(value);
+                    setParam("cq", value);
                   }}
                 />
-                {query && (
+                {collectionQuery && (
                   <ClearIcon
                     className="list-search-clear"
                     size={20}
                     onClick={() => {
-                      setQuery("");
-                      setParam("q", null);
+                      setCollectionQuery("");
+                      setParam("cq", null);
+                    }}
+                  />
+                )}
+              </label>
+              <div
+                className="list-random"
+                onClick={() => {
+                  const wearable = pickRandom(wearables);
+                  setWearable(wearable);
+                  setCollection(getCollection("*"));
+                  // onSelect(wearable);
+                  // setParam("id", wearable.id);
+                  // const idx = results.indexOf(wearable);
+                  // const rowIndex = Math.floor(idx / numColumns);
+                  // const columnIndex = idx % numColumns;
+                  // listRef.current.scrollToItem({
+                  //   align: "start",
+                  //   rowIndex,
+                  //   columnIndex,
+                  // });
+                }}
+              >
+                <DiceIcon size={20} />
+              </div>
+            </div>
+            <div className="list-body">
+              <div className="list-inner" ref={innerRef}>
+                <FixedSizeGrid
+                  className="list-scroll"
+                  ref={listRef}
+                  width={size[0]}
+                  height={size[1]}
+                  columnCount={numColumns}
+                  columnWidth={size[0] / numColumns}
+                  rowCount={Math.ceil(collections.length / numColumns)}
+                  rowHeight={size[0] / numColumns}
+                >
+                  {({ columnIndex, rowIndex, style }) => {
+                    const idx = rowIndex * numColumns + columnIndex;
+                    const collection = collections[idx];
+                    if (!collection) return null;
+                    return (
+                      <CollectionCell
+                        style={style}
+                        collection={collection}
+                        onClick={() => setCollection(collection)}
+                      />
+                    );
+                    return (
+                      <div
+                        style={style}
+                        onClick={() => setCollection(collection)}
+                      >
+                        {collection.name}
+                      </div>
+                    );
+                    // <Item
+                    //   style={style}
+                    //   wearable={results[rowIndex * numColumns + columnIndex]}
+                    //   selected={
+                    //     current === results[rowIndex * numColumns + columnIndex]
+                    //   }
+                    //   onClick={() => {
+                    //     const wearable =
+                    //       results[rowIndex * numColumns + columnIndex];
+                    //     onSelect(wearable);
+                    //     setParam("id", wearable.id);
+                    //   }}
+                    // />
+                  }}
+                </FixedSizeGrid>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function WearableExplorer({
+        back,
+        wearableQuery,
+        setWearableQuery,
+        wearables,
+        wearable,
+        setWearable,
+        collection,
+      }) {
+        const innerRef = useRef();
+        const listRef = useRef();
+        const size = useSize(innerRef);
+        const numColumns = Math.round(size[0] / 100);
+        const cellSize = size[0] / numColumns;
+        useEffect(() => {
+          if (!size[0]) return;
+          if (!wearable) return;
+          const idx = wearables.indexOf(wearable);
+          const rowIndex = Math.floor(idx / numColumns);
+          const columnIndex = idx % numColumns;
+          listRef.current.scrollToItem({
+            align: "start",
+            rowIndex,
+            columnIndex,
+          });
+        }, [size]);
+        return (
+          <div className="list">
+            <div className="list-head">
+              <div className="list-back" onClick={back}>
+                <LeftIcon size={18} />
+              </div>
+              <label className="list-search">
+                <SearchIcon className="list-search-icon" size={18} />
+                <input
+                  className="list-search-input"
+                  placeholder={`Search ${collection.name}`}
+                  type="text"
+                  value={wearableQuery}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setWearableQuery(value);
+                    setParam("wq", value);
+                  }}
+                />
+                {wearableQuery && (
+                  <ClearIcon
+                    className="list-search-clear"
+                    size={20}
+                    onClick={() => {
+                      setWearableQuery("");
+                      setParam("wq", null);
                     }}
                   />
                 )}
@@ -547,10 +776,10 @@
                 className="list-random"
                 onClick={(e) => {
                   e.preventDefault();
-                  const wearable = pickRandom(results);
-                  onSelect(wearable);
+                  const wearable = pickRandom(wearables);
+                  setWearable(wearable);
                   setParam("id", wearable.id);
-                  const idx = results.indexOf(wearable);
+                  const idx = wearables.indexOf(wearable);
                   const rowIndex = Math.floor(idx / numColumns);
                   const columnIndex = idx % numColumns;
                   listRef.current.scrollToItem({
@@ -572,24 +801,25 @@
                   height={size[1]}
                   columnCount={numColumns}
                   columnWidth={size[0] / numColumns}
-                  rowCount={Math.ceil(results.length / numColumns)}
+                  rowCount={Math.ceil(wearables.length / numColumns)}
                   rowHeight={size[0] / numColumns}
                 >
-                  {({ columnIndex, rowIndex, style }) => (
-                    <Item
-                      style={style}
-                      wearable={results[rowIndex * numColumns + columnIndex]}
-                      selected={
-                        current === results[rowIndex * numColumns + columnIndex]
-                      }
-                      onClick={() => {
-                        const wearable =
-                          results[rowIndex * numColumns + columnIndex];
-                        onSelect(wearable);
-                        setParam("id", wearable.id);
-                      }}
-                    />
-                  )}
+                  {({ columnIndex, rowIndex, style }) => {
+                    const idx = rowIndex * numColumns + columnIndex;
+                    const _wearable = wearables[idx];
+                    if (!_wearable) return null;
+                    return (
+                      <WearableCell
+                        style={style}
+                        wearable={_wearable}
+                        selected={wearable === _wearable}
+                        onClick={() => {
+                          setWearable(_wearable);
+                          setParam("wid", _wearable.id);
+                        }}
+                      />
+                    );
+                  }}
                 </FixedSizeGrid>
               </div>
             </div>
@@ -598,14 +828,43 @@
       }
 
       const imgLoaded = new Set();
-      function Item({ wearable, selected, style, onClick }) {
-        if (!wearable) return null; // empty cells
+
+      function CollectionCell({ collection, style, onClick }) {
+        const imgRef = useRef();
+        useEffect(() => {
+          const elem = imgRef.current;
+          const url = `url(${collection.image})`;
+          const loaded = imgLoaded.has(url);
+          if (loaded) {
+            elem.style.backgroundImage = url;
+            return;
+          }
+          let dead;
+          setTimeout(() => {
+            if (dead) return;
+            elem.style.backgroundImage = url;
+            imgLoaded.add(url);
+          }, 300);
+          return () => {
+            dead = true;
+          };
+        }, []);
+        return (
+          <div className={"cell collection"} style={style} onClick={onClick}>
+            <div className="cell-inner">
+              <div className="cell-img" ref={imgRef} />
+              <div className="cell-name">{collection.name}</div>
+            </div>
+          </div>
+        );
+      }
+
+      function WearableCell({ wearable, selected, style, onClick }) {
         const imgRef = useRef();
         useEffect(() => {
           const elem = imgRef.current;
           const url = `url(${wearable.image})`;
           const loaded = imgLoaded.has(url);
-          // console.log(loaded, url);
           if (loaded) {
             elem.style.backgroundImage = url;
             return;
@@ -622,19 +881,19 @@
         }, []);
         return (
           <div
-            className={cls("item", { selected })}
+            className={cls("cell", { selected })}
             style={style}
             onClick={onClick}
           >
-            <div className="item-inner">
-              <div className="item-img" ref={imgRef} />
-              <div className="item-name">{wearable.name}</div>
+            <div className="cell-inner">
+              <div className="cell-img" ref={imgRef} />
+              <div className="cell-name">{wearable.name}</div>
             </div>
           </div>
         );
       }
 
-      function Preview({ current }) {
+      function Preview({ wearable }) {
         const mvRef = useRef();
         const [loading, setLoading] = useState(true);
         useEffect(() => {
@@ -645,12 +904,12 @@
         }, []);
         useEffect(() => {
           setLoading(true);
-        }, [current]);
+        }, [wearable]);
         return (
           <div className="preview">
             <model-viewer
               ref={mvRef}
-              src={current.glb}
+              src={wearable.glb}
               class={cls("preview-mv", { loading })}
               camera-controls
               tone-mapping="commerce"
@@ -659,7 +918,7 @@
               xr-environment
               shadow-intensity="1"
               shadow-softness="1"
-              skybox-image={`https://arweave.net/ataPSsAKl_22yZYVEZVFdOk2vpFw6O2ffyrmYVxIXLs/${current.year}.jpg`}
+              skybox-image={`https://arweave.net/ataPSsAKl_22yZYVEZVFdOk2vpFw6O2ffyrmYVxIXLs/${wearable.year}.jpg`}
               skybox-height="1.4m"
             >
               <div slot="progress-bar" />
@@ -674,105 +933,103 @@
       }
 
       function Details({
-        current,
-        onSelect,
-        setQuery,
-        usePreview,
+        wearable,
+        setWearable,
+        setWearableQuery,
+        setCollection,
+        isMobile,
         goPrevious,
         goRandom,
         goNext,
       }) {
-        const attributes = [
-          {
-            label: "Rarity",
-            key: "rarity",
-            query: { name: "rarity", key: "rarity" },
-          },
-          {
-            label: "Issues",
-            key: "issues",
-            query: { name: "issues", key: "issues" },
-          },
-          {
-            label: "Author",
-            key: "author",
-            query: { name: "author", key: "author" },
-          },
-          {
-            label: "Collection",
-            key: "collectionName",
-            query: { name: "collection", key: "collectionId" },
-          },
-          {
-            label: "Year",
-            key: "year",
-            query: { name: "year", key: "year" },
-          },
-        ];
+        if (!wearable) return null; // TODO: fix
+        const collection = getCollection(wearable.collectionId);
         return (
           <div className="details">
             <div className="details-head">
               <div className="details-head-side left"></div>
-              <div className="details-name">{current.name}</div>
+              <div className="details-name">{wearable.name}</div>
               <div className="details-head-side right">
                 <div
                   className="details-head-btn close"
-                  onClick={() => onSelect(null)}
+                  onClick={() => setWearable(null)}
                 >
                   <CloseIcon size={20} />
                 </div>
               </div>
             </div>
             <div className="details-body">
-              {usePreview && (
+              {isMobile && (
                 <div className="details-preview">
-                  <Preview current={current} />
+                  <Preview wearable={wearable} />
                 </div>
               )}
-              {!usePreview && (
+              {!isMobile && (
                 <div
                   className="details-img"
-                  style={{ backgroundImage: `url(${current.image})` }}
+                  style={{ backgroundImage: `url(${wearable.image})` }}
                 />
               )}
-              <div className="details-desc">{current.description}</div>
-              {attributes.map((attr, idx) => (
-                <div
-                  key={idx}
-                  className="details-attr"
-                  onClick={() => {
-                    if (attr.query) {
-                      const name = attr.query.name;
-                      const value = current[attr.query.key];
-                      const quote = value.includes(" ");
-                      setQuery(
-                        quote
-                          ? `${attr.query.name}:"${current[attr.query.key]}"`
-                          : `${attr.query.name}:${current[attr.query.key]}`
-                      );
-                    }
-                  }}
-                >
-                  <div className="details-attr-name">{attr.label}</div>
-                  <div className="details-attr-value">{current[attr.key]}</div>
-                </div>
-              ))}
+              <div className="details-desc">{wearable.description}</div>
+              <div
+                className="details-attr"
+                onClick={() => {
+                  setWearableQuery(`author:"${wearable.author}"`);
+                  setCollection(getCollection("*"));
+                  if (isMobile) setWearable(null);
+                }}
+              >
+                <div className="details-attr-name">Author</div>
+                <div className="details-attr-value">{wearable.author}</div>
+              </div>
+              <div
+                className="details-attr"
+                onClick={() => {
+                  setWearableQuery(`collection:${collection.id}`);
+                  setCollection(getCollection("*"));
+                  if (isMobile) setWearable(null);
+                }}
+              >
+                <div className="details-attr-name">Collection</div>
+                <div className="details-attr-value">{collection.name}</div>
+              </div>
+              <div
+                className="details-attr"
+                onClick={() => {
+                  setWearableQuery(`rarity:${wearable.rarity}`);
+                  setCollection(getCollection("*"));
+                  if (isMobile) setWearable(null);
+                }}
+              >
+                <div className="details-attr-name">Rarity</div>
+                <div className="details-attr-value">{wearable.rarity}</div>
+              </div>
+              <div
+                className="details-attr"
+                onClick={() => {
+                  setWearableQuery(`issues:${wearable.issues}`);
+                  setCollection(getCollection("*"));
+                  if (isMobile) setWearable(null);
+                }}
+              >
+                <div className="details-attr-name">Issues</div>
+                <div className="details-attr-value">{wearable.issues}</div>
+              </div>
             </div>
             <div className="details-foot">
               <div
                 className="details-foot-btn"
                 onClick={() => {
-                  console.log("XX");
                   goPrevious();
                 }}
               >
-                <PreviousIcon />
+                <LeftIcon />
               </div>
               <div className="details-foot-btn" onClick={goRandom}>
                 <DiceIcon />
               </div>
               <div className="details-foot-btn" onClick={goNext}>
-                <NextIcon />
+                <RightIcon />
               </div>
             </div>
           </div>
@@ -883,7 +1140,7 @@
         );
       }
 
-      function PreviousIcon({ size = 24, ...props }) {
+      function LeftIcon({ size = 24, ...props }) {
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -902,7 +1159,7 @@
         );
       }
 
-      function NextIcon({ size = 24, ...props }) {
+      function RightIcon({ size = 24, ...props }) {
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -921,28 +1178,127 @@
         );
       }
 
+      function Logo({ size = 24, ...props }) {
+        return (
+          <svg
+            width={size}
+            height={size}
+            viewBox="0 0 137 137"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M0 14.2H27.4V41.6H0V14.2Z" fill="#E94420" />
+            <path d="M0 41.6H27.4V69H0V41.6Z" fill="#E9AE20" />
+            <path d="M0 69H27.4V96.3999H0V69Z" fill="#B1E920" />
+            <path d="M109.6 14.2H137V41.6H109.6V14.2Z" fill="#E94420" />
+            <path d="M109.6 41.6H137V69H109.6V41.6Z" fill="#E9AE20" />
+            <path d="M109.6 69H137V96.3999H109.6V69Z" fill="#B1E920" />
+            <path
+              d="M27.4 96.3999L54.8 96.3997V123.8H27.4V96.3999Z"
+              fill="#20E9AC"
+            />
+            <path
+              d="M82.2 96.3997L109.6 96.3999V123.8H82.2V96.3997Z"
+              fill="#20E9AC"
+            />
+            <path d="M54.8 69H82.2V96.3997H54.8V69Z" fill="#2091E9" />
+            <path d="M54.8 41.6H82.2V69H54.8V41.6Z" fill="#C420E9" />
+            <path d="M54.8 14.2H82.2V41.6H54.8V14.2Z" fill="#E92071" />
+          </svg>
+        );
+        // return (
+        //   <svg
+        //     width={size}
+        //     height={size}
+        //     viewBox="0 0 137 137"
+        //     fill="none"
+        //     xmlns="http://www.w3.org/2000/svg"
+        //   >
+        //     <g clip-path="url(#clip0_6_179)">
+        //       <path
+        //         d="M63 3.4641C66.7128 1.32051 71.2872 1.32051 75 3.4641L122.756 31.0359C126.469 33.1795 128.756 37.141 128.756 41.4282V96.5718C128.756 100.859 126.469 104.821 122.756 106.964L75 134.536C71.2872 136.679 66.7128 136.679 63 134.536L15.2443 106.964C11.5314 104.821 9.24426 100.859 9.24426 96.5718V41.4282C9.24426 37.141 11.5314 33.1795 15.2443 31.0359L63 3.4641Z"
+        //         fill="url(#paint0_linear_6_179)"
+        //       />
+        //       <path d="M31 39H46V54H31V39Z" fill="#E94420" />
+        //       <path d="M31 54H46V69H31L31 54Z" fill="#E9AE20" />
+        //       <path d="M31 69H46V84H31V69Z" fill="#B1E920" />
+        //       <path d="M91 39H106V54H91V39Z" fill="#E94420" />
+        //       <path d="M91 54H106V69H91V54Z" fill="#E9AE20" />
+        //       <path d="M91 69H106V84H91V69Z" fill="#B1E920" />
+        //       <path d="M46 84L61 83.9999V98.9999H46V84Z" fill="#20E9AC" />
+        //       <path d="M76 83.9999L91 84V98.9999H76V83.9999Z" fill="#20E9AC" />
+        //       <path d="M61 69H76V83.9999H61V69Z" fill="#2091E9" />
+        //       <path d="M61 54H76V69H61V54Z" fill="#C420E9" />
+        //       <path d="M61 39H76V54H61V39Z" fill="#E92071" />
+        //     </g>
+        //     <defs>
+        //       <linearGradient
+        //         id="paint0_linear_6_179"
+        //         x1="69"
+        //         y1="0"
+        //         x2="69"
+        //         y2="138"
+        //         gradientUnits="userSpaceOnUse"
+        //       >
+        //         <stop stop-color="#6E2878" />
+        //         <stop offset="1" stop-color="#37184F" />
+        //       </linearGradient>
+        //       <clipPath id="clip0_6_179">
+        //         <rect width="137" height="137" fill="white" />
+        //       </clipPath>
+        //     </defs>
+        //   </svg>
+        // );
+      }
+
+      function CollectionsIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-component"
+          >
+            <path d="M5.5 8.5 9 12l-3.5 3.5L2 12l3.5-3.5Z" />
+            <path d="m12 2 3.5 3.5L12 9 8.5 5.5 12 2Z" />
+            <path d="M18.5 8.5 22 12l-3.5 3.5L15 12l3.5-3.5Z" />
+            <path d="m12 15 3.5 3.5L12 22l-3.5-3.5L12 15Z" />
+          </svg>
+        );
+      }
+
       function Spinner() {
         return <span class="spinner"></span>;
       }
 
-      let imgs;
-      function getImg(url, spawn = true) {
-        if (!imgs) imgs = new Map();
-        let img = imgs.get(url);
-        if (!img && spawn) {
-          img = document.createElement("img");
-          img.src = url;
-          imgs.set(url, img);
-        }
-        return img;
-      }
+      // let imgs;
+      // function getImg(url, spawn = true) {
+      //   if (!imgs) imgs = new Map();
+      //   let img = imgs.get(url);
+      //   if (!img && spawn) {
+      //     img = document.createElement("img");
+      //     img.src = url;
+      //     imgs.set(url, img);
+      //   }
+      //   return img;
+      // }
 
       function pickRandom(array) {
         return array[Math.floor(Math.random() * array.length)];
       }
 
       function getWearable(id) {
-        return wearables.find((wearable) => wearable.id === id);
+        return wearablesById[id];
+      }
+
+      function getCollection(id) {
+        return collectionsById[id];
       }
 
       function cls(...args) {
@@ -960,6 +1316,22 @@
         return str;
       }
 
+      function useSize(elemRef) {
+        const [size, setSize] = useState([0, 0]);
+        useLayoutEffect(() => {
+          const elem = elemRef.current;
+          const onResize = () => {
+            setSize([elem.offsetWidth, elem.offsetHeight]);
+          };
+          const resizer = new ResizeObserver(() => {
+            onResize();
+          });
+          resizer.observe(elemRef.current);
+          onResize();
+        }, []);
+        return size;
+      }
+
       function setParam(key, value) {
         const url = new URL(window.location.href);
         if (value) {
@@ -970,7 +1342,7 @@
         history.replaceState(null, "", url.toString());
       }
 
-      function parseQuery(query) {
+      function parseWearablesQuery(query) {
         const matchers = [];
         const regex = /(\w+:"[^"]+"|\w+:\S+|\S+)/g;
         let match;
@@ -995,7 +1367,7 @@
         return matchers;
       }
 
-      function filterByQuery(items, query) {
+      function queryWearables(collectionId, query) {
         const matcherNamesToKey = {
           any: "keywords",
           issues: "issues",
@@ -1005,17 +1377,27 @@
           collection: "collectionId",
           token: "tokenId",
         };
-        const matchers = parseQuery(query);
-        return items.filter((item) => {
+        const matchers = query ? parseWearablesQuery(query) : null;
+        return db.wearables.filter((wearable) => {
+          if (
+            collectionId &&
+            collectionId !== "*" &&
+            wearable.collectionId !== collectionId
+          ) {
+            return false;
+          }
+          if (!matchers) {
+            return true;
+          }
           for (const matcher of matchers) {
             const key = matcherNamesToKey[matcher.name];
             if (!key) return false;
             if (matcher.exact) {
-              if (item[key] !== matcher.value) {
+              if (wearable[key] !== matcher.value) {
                 return false;
               }
             } else {
-              if (!item[key].includes(matcher.value)) {
+              if (!wearable[key].includes(matcher.value)) {
                 return false;
               }
             }
@@ -1024,7 +1406,40 @@
         });
       }
 
-      function buildWearableKeywords() {
+      function queryCollections(query) {
+        if (!query) return db.collections;
+        query = query.toLowerCase();
+        const results = db.collections.filter((collection) => {
+          return collection.keywords.includes(query);
+        });
+        return results;
+      }
+
+      function initCollections() {
+        // add "all" collection
+        db.collections.unshift({
+          id: "*",
+          name: "All Collections",
+          image: null,
+        });
+        // build keywords
+        const keywordKeys = ["name"];
+        for (const collection of db.collections) {
+          const keywords = [];
+          for (const key of keywordKeys) {
+            keywords.push(collection[key]);
+          }
+          collection.keywords = keywords.join(" ").toLowerCase();
+        }
+        // build images
+        for (const collection of db.collections) {
+          if (collection.hasImage) {
+            collection.image = `https://arweave.net/YgdXdtgECPF5wcOpVgKVHqgYTVdayKGdq-KQoQS7LqY/${collection.id}.png`;
+          }
+        }
+      }
+
+      function initWearables() {
         const keywordKeys = [
           "name",
           "image",
@@ -1036,7 +1451,7 @@
           "collectionId",
           "collectionName",
         ];
-        for (const wearable of wearables) {
+        for (const wearable of db.wearables) {
           const keywords = [];
           for (const key of keywordKeys) {
             keywords.push(wearable[key]);
@@ -1111,7 +1526,7 @@
         bottom: 0;
         margin: auto;
         border: 3px solid;
-        border-color: transparent transparent #ff3d00 #ff3d00;
+        border-color: transparent transparent #b700ff #d000ff;
         width: 40px;
         height: 40px;
         border-radius: 50%;
