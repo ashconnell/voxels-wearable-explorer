@@ -81,10 +81,12 @@
         right: 0;
         height: 100vh;
         height: -webkit-fill-available;
-        display: flex;
-        align-items: stretch;
       }
       .appd-explorer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
         width: 340px;
         box-shadow: 0 1px 1px hsl(0deg 0% 0% / 0.075),
           0 2px 2px hsl(0deg 0% 0% / 0.075), 0 4px 4px hsl(0deg 0% 0% / 0.075),
@@ -93,10 +95,18 @@
         display: flex;
       }
       .appd-preview {
-        flex: 1;
+        position: absolute;
+        top: 0;
+        left: 340px;
+        right: 400px;
+        bottom: 0;
         display: flex;
       }
       .appd-details {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
         width: 400px;
         box-shadow: 0 1px 1px hsl(0deg 0% 0% / 0.075),
           0 2px 2px hsl(0deg 0% 0% / 0.075), 0 4px 4px hsl(0deg 0% 0% / 0.075),
@@ -106,10 +116,14 @@
         overflow-y: auto;
       }
       .appd.fullscreen .appd-explorer {
-        display: none;
+        left: -340px;
       }
       .appd.fullscreen .appd-details {
-        display: none;
+        right: -400px;
+      }
+      .appd.fullscreen .appd-preview {
+        left: 0;
+        right: 0;
       }
       .appm {
         position: absolute;
