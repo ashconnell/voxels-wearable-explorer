@@ -101,6 +101,12 @@
         display: flex;
         overflow-y: auto;
       }
+      .appd.fullscreen .appd-explorer {
+        display: none;
+      }
+      .appd.fullscreen .appd-details {
+        display: none;
+      }
       .appm {
         position: absolute;
         top: 0;
@@ -286,6 +292,20 @@
         justify-content: center;
         pointer-events: none;
       }
+      .preview-fullscreen {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.15);
+        border-radius: 20px;
+        background: white;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       .details {
         flex: 1;
         display: flex;
@@ -344,8 +364,16 @@
         height: 400px;
         border-radius: 10px;
         overflow: hidden;
-        display: flex;
         margin: 0 0 20px;
+        display: flex;
+      }
+      .details-preview.fullscreen {
+        position: absolute;
+        inset: 0;
+        height: inherit;
+        margin: 0;
+        z-index: 1;
+        border-radius: 0;
       }
       .details-img {
         padding-bottom: 100%;
@@ -463,6 +491,7 @@
           return queryWearables(collection?.id, wearableQuery);
         }, [wearableQuery, collection?.id]);
         if (!wearable && !mobile) wearable = wearables[0];
+        const [fullscreen, setFullscreen] = useState(false);
         useEffect(() => {
           const onResize = () => {
             setMobile(window.innerWidth <= 1000);
@@ -542,7 +571,7 @@
         }
 
         return (
-          <div className="appd">
+          <div className={cls("appd", { fullscreen })}>
             <div className="appd-explorer">
               {!collection && (
                 <CollectionExplorer
@@ -571,7 +600,13 @@
               )}
             </div>
             <div className="appd-preview">
-              {wearable && <Preview wearable={wearable} />}
+              {wearable && (
+                <Preview
+                  wearable={wearable}
+                  fullscreen={fullscreen}
+                  setFullscreen={setFullscreen}
+                />
+              )}
             </div>
             <div className="appd-details">
               <Details
@@ -649,16 +684,6 @@
                   const wearable = pickRandom(wearables);
                   setWearable(wearable);
                   setCollection(getCollection("*"));
-                  // onSelect(wearable);
-                  // setParam("id", wearable.id);
-                  // const idx = results.indexOf(wearable);
-                  // const rowIndex = Math.floor(idx / numColumns);
-                  // const columnIndex = idx % numColumns;
-                  // listRef.current.scrollToItem({
-                  //   align: "start",
-                  //   rowIndex,
-                  //   columnIndex,
-                  // });
                 }}
               >
                 <DiceIcon size={20} />
@@ -695,19 +720,6 @@
                         {collection.name}
                       </div>
                     );
-                    // <Item
-                    //   style={style}
-                    //   wearable={results[rowIndex * numColumns + columnIndex]}
-                    //   selected={
-                    //     current === results[rowIndex * numColumns + columnIndex]
-                    //   }
-                    //   onClick={() => {
-                    //     const wearable =
-                    //       results[rowIndex * numColumns + columnIndex];
-                    //     onSelect(wearable);
-                    //     setParam("id", wearable.id);
-                    //   }}
-                    // />
                   }}
                 </FixedSizeGrid>
               </div>
@@ -893,7 +905,7 @@
         );
       }
 
-      function Preview({ wearable }) {
+      function Preview({ wearable, fullscreen, setFullscreen }) {
         const mvRef = useRef();
         const [loading, setLoading] = useState(true);
         useEffect(() => {
@@ -908,6 +920,7 @@
         return (
           <div className="preview">
             <model-viewer
+              id={"mv"}
               ref={mvRef}
               src={wearable.glb}
               class={cls("preview-mv", { loading })}
@@ -928,6 +941,13 @@
                 <Spinner />
               </div>
             )}
+            <div
+              className="preview-fullscreen"
+              onClick={() => setFullscreen(!fullscreen)}
+            >
+              {!fullscreen && <MaximizeIcon size={20} />}
+              {fullscreen && <MinimizeIcon size={20} />}
+            </div>
           </div>
         );
       }
@@ -942,7 +962,8 @@
         goRandom,
         goNext,
       }) {
-        if (!wearable) return null; // TODO: fix
+        const [fullscreen, setFullscreen] = useState(false);
+        // if (!wearable) return null; // TODO: fix
         const collection = getCollection(wearable.collectionId);
         return (
           <div className="details">
@@ -960,8 +981,12 @@
             </div>
             <div className="details-body">
               {isMobile && (
-                <div className="details-preview">
-                  <Preview wearable={wearable} />
+                <div className={cls("details-preview", { fullscreen })}>
+                  <Preview
+                    wearable={wearable}
+                    fullscreen={fullscreen}
+                    setFullscreen={setFullscreen}
+                  />
                 </div>
               )}
               {!isMobile && (
@@ -1174,6 +1199,49 @@
           >
             <path d="M5 12h14" />
             <path d="m12 5 7 7-7 7" />
+          </svg>
+        );
+      }
+
+      function MaximizeIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+            <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+            <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+          </svg>
+        );
+      }
+
+      function MinimizeIcon({ size = 24, ...props }) {
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-minimize"
+          >
+            <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+            <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+            <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+            <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
           </svg>
         );
       }
