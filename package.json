@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npm run generate && npm run start",
-    "generate": "node generate",
-    "start": "servor --reload"
+    "download": "node scripts/download.js",
+    "generate": "node scripts/generate.js",
+    "serve": "servor --reload"
   },
   "dependencies": {
     "servor": "^4.0.2",

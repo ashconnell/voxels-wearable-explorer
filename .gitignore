@@ -1,4 +1,5 @@
 node_modules/
 tmp/
 raw/
+wearables/
 .DS_Store
