@@ -1061,6 +1061,50 @@
                 <div className="details-attr-name">Issues</div>
                 <div className="details-attr-value">{wearable.issues}</div>
               </div>
+              <div
+                className="details-attr"
+                onClick={() => {
+                  setWearableQuery(`year:${wearable.year}`);
+                  setCollection(getCollection("*"));
+                  if (isMobile) setWearable(null);
+                }}
+              >
+                <div className="details-attr-name">Year</div>
+                <div className="details-attr-value">{wearable.year}</div>
+              </div>
+              <div className="details-attr">
+                <div className="details-attr-name">GLB</div>
+                <a
+                  className="details-attr-value"
+                  href={wearable.glb}
+                  download={`${wearable.collectionId}_${wearable.tokenId}.glb`}
+                  target="_blank"
+                >
+                  <span>Download</span>
+                </a>
+              </div>
+              <div className="details-attr">
+                <div className="details-attr-name">VOX</div>
+                <a
+                  className="details-attr-value"
+                  href={wearable.vox}
+                  download={`${wearable.collectionId}_${wearable.tokenId}.vox`}
+                  target="_blank"
+                >
+                  <span>Download</span>
+                </a>
+              </div>
+              <div className="details-attr">
+                <div className="details-attr-name">SVOX</div>
+                <a
+                  className="details-attr-value"
+                  href={wearable.svox}
+                  download={`${wearable.collectionId}_${wearable.tokenId}.svox`}
+                  target="_blank"
+                >
+                  <span>Download</span>
+                </a>
+              </div>
             </div>
             <div className="details-foot">
               <div

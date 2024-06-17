@@ -61,6 +61,7 @@ const run = async () => {
       collection = {
         id: collectionId,
         name: getTrait(meta, "collection"),
+        hasImage: true,
         // TODO: hasImage
       };
       collectionsById.set(collection.id, collection);
