@@ -21,7 +21,7 @@ const run = async () => {
     const raw = await fs.readFile(file, "utf-8");
     const empty = raw.trim().length === 0;
     if (empty) {
-      console.log("found empty file", file);
+      // console.log("found empty file", file);
       emptyCount++;
       continue;
     }
@@ -40,6 +40,7 @@ const run = async () => {
       vox: getTrait(meta, "vox"),
       svox: getTrait(meta, "svox"),
       glb: getTrait(meta, "glb"),
+      extras: getSecondaryTraits(meta),
       externalUrl: meta.external_url,
       tokenId,
       collectionId,
@@ -81,6 +82,34 @@ run();
 
 const getTrait = (meta, name) => {
   return meta.attributes.find((attr) => attr.trait_type === name).value;
+};
+
+const primaryTraits = [
+  "collection",
+  "issues",
+  "rarity",
+  "year",
+  "author",
+  "vox",
+  "svox",
+  "glb",
+];
+
+const getSecondaryTraits = (meta) => {
+  const traits = meta.attributes
+    .filter((item) => {
+      const isSecondary = !primaryTraits.includes(item.trait_type);
+      const isValid = item.trait_type && item.value;
+      return isSecondary && isValid;
+    })
+    .map((item) => {
+      return {
+        name: item.trait_type,
+        value: item.value,
+      };
+    });
+  if (traits.length) console.log(meta.name, traits);
+  return traits;
 };
 
 function safeStringify(data) {

@@ -431,6 +431,21 @@
         color: #893aff;
         cursor: pointer;
       }
+      .details-line {
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        margin: 30px 0;
+      }
+      .details-extra {
+        margin: 0 0 20px;
+      }
+      .details-extra-name {
+        font-weight: 600;
+        line-height: 1.3;
+        margin: 0 0 4px;
+      }
+      .details-extra-value {
+        color: rgba(0, 0, 0, 0.5);
+      }
       .details-foot {
         display: flex;
         justify-content: center;
@@ -1033,7 +1048,7 @@
               <div className="details-desc">{wearable.description}</div>
               <div className="details-attr">
                 <div className="details-attr-name">Token</div>
-                <div className="details-attr-value">{wearable.tokenId}</div>
+                <div className="details-attr-value">#{wearable.tokenId}</div>
               </div>
               <div className="details-attr">
                 <div className="details-attr-name">Collection</div>
@@ -1045,7 +1060,7 @@
                     if (isMobile) setWearable(null);
                   }}
                 >
-                  {collection.id} ({collection.name})
+                  #{collection.id} ({collection.name})
                 </div>
               </div>
               <div className="details-attr">
@@ -1142,6 +1157,15 @@
                   <span>Download</span>
                 </div>
               </div>
+              <div className="details-line" />
+              {wearable.extras.map((item) => (
+                <div className="details-extra">
+                  <div className="details-extra-name">{item.name}</div>
+                  <div className="details-extra-value">
+                    <span>{item.value}</span>
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="details-foot">
               <div
