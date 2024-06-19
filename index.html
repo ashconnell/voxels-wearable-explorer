@@ -426,6 +426,8 @@
       }
       .details-attr-value {
         word-break: break-all;
+      }
+      .details-attr-value.-link {
         color: #893aff;
         cursor: pointer;
       }
@@ -986,6 +988,18 @@
         const [fullscreen, setFullscreen] = useState(false);
         // if (!wearable) return null; // TODO: fix
         const collection = getCollection(wearable.collectionId);
+        const download = async (url, fileName) => {
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          const link = document.createElement("a");
+          const localUrl = URL.createObjectURL(blob);
+          link.setAttribute("href", localUrl);
+          link.setAttribute("download", fileName);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
         return (
           <div className="details">
             <div className="details-head">
@@ -1017,93 +1031,116 @@
                 />
               )}
               <div className="details-desc">{wearable.description}</div>
-              <div
-                className="details-attr"
-                onClick={() => {
-                  setWearableQuery(`author:"${wearable.author}"`);
-                  setCollection(getCollection("*"));
-                  if (isMobile) setWearable(null);
-                }}
-              >
-                <div className="details-attr-name">Author</div>
-                <div className="details-attr-value">{wearable.author}</div>
+              <div className="details-attr">
+                <div className="details-attr-name">Token</div>
+                <div className="details-attr-value">{wearable.tokenId}</div>
               </div>
-              <div
-                className="details-attr"
-                onClick={() => {
-                  setWearableQuery(`collection:${collection.id}`);
-                  setCollection(getCollection("*"));
-                  if (isMobile) setWearable(null);
-                }}
-              >
+              <div className="details-attr">
                 <div className="details-attr-name">Collection</div>
-                <div className="details-attr-value">{collection.name}</div>
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    setWearableQuery(`collection:${collection.id}`);
+                    setCollection(getCollection("*"));
+                    if (isMobile) setWearable(null);
+                  }}
+                >
+                  {collection.id} ({collection.name})
+                </div>
               </div>
-              <div
-                className="details-attr"
-                onClick={() => {
-                  setWearableQuery(`rarity:${wearable.rarity}`);
-                  setCollection(getCollection("*"));
-                  if (isMobile) setWearable(null);
-                }}
-              >
+              <div className="details-attr">
+                <div className="details-attr-name">Author</div>
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    setWearableQuery(`author:"${wearable.author}"`);
+                    setCollection(getCollection("*"));
+                    if (isMobile) setWearable(null);
+                  }}
+                >
+                  {wearable.author}
+                </div>
+              </div>
+              <div className="details-attr">
                 <div className="details-attr-name">Rarity</div>
-                <div className="details-attr-value">{wearable.rarity}</div>
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    setWearableQuery(`rarity:${wearable.rarity}`);
+                    setCollection(getCollection("*"));
+                    if (isMobile) setWearable(null);
+                  }}
+                >
+                  {wearable.rarity}
+                </div>
               </div>
-              <div
-                className="details-attr"
-                onClick={() => {
-                  setWearableQuery(`issues:${wearable.issues}`);
-                  setCollection(getCollection("*"));
-                  if (isMobile) setWearable(null);
-                }}
-              >
+              <div className="details-attr">
                 <div className="details-attr-name">Issues</div>
-                <div className="details-attr-value">{wearable.issues}</div>
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    setWearableQuery(`issues:${wearable.issues}`);
+                    setCollection(getCollection("*"));
+                    if (isMobile) setWearable(null);
+                  }}
+                >
+                  {wearable.issues}
+                </div>
               </div>
-              <div
-                className="details-attr"
-                onClick={() => {
-                  setWearableQuery(`year:${wearable.year}`);
-                  setCollection(getCollection("*"));
-                  if (isMobile) setWearable(null);
-                }}
-              >
+              <div className="details-attr">
                 <div className="details-attr-name">Year</div>
-                <div className="details-attr-value">{wearable.year}</div>
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    setWearableQuery(`year:${wearable.year}`);
+                    setCollection(getCollection("*"));
+                    if (isMobile) setWearable(null);
+                  }}
+                >
+                  {wearable.year}
+                </div>
               </div>
               <div className="details-attr">
                 <div className="details-attr-name">GLB</div>
-                <a
-                  className="details-attr-value"
-                  href={wearable.glb}
-                  download={`${wearable.collectionId}_${wearable.tokenId}.glb`}
-                  target="_blank"
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    download(
+                      wearable.glb,
+                      `voxels-wearable-${wearable.collectionId}-${wearable.tokenId}.glb`
+                    );
+                  }}
                 >
                   <span>Download</span>
-                </a>
+                </div>
               </div>
               <div className="details-attr">
                 <div className="details-attr-name">VOX</div>
-                <a
-                  className="details-attr-value"
-                  href={wearable.vox}
-                  download={`${wearable.collectionId}_${wearable.tokenId}.vox`}
-                  target="_blank"
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    download(
+                      wearable.vox,
+                      `voxels-wearable-${wearable.collectionId}-${wearable.tokenId}.vox`
+                    );
+                  }}
                 >
                   <span>Download</span>
-                </a>
+                </div>
               </div>
               <div className="details-attr">
                 <div className="details-attr-name">SVOX</div>
-                <a
-                  className="details-attr-value"
-                  href={wearable.svox}
-                  download={`${wearable.collectionId}_${wearable.tokenId}.svox`}
-                  target="_blank"
+                <div
+                  className="details-attr-value -link"
+                  onClick={() => {
+                    download(
+                      wearable.svox,
+                      `voxels-wearable-${wearable.collectionId}-${wearable.tokenId}.svox`
+                    );
+                  }}
                 >
                   <span>Download</span>
-                </a>
+                </div>
               </div>
             </div>
             <div className="details-foot">
