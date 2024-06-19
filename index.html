@@ -1572,32 +1572,34 @@
           token: "tokenId",
         };
         const matchers = query ? parseWearablesQuery(query) : null;
-        return db.wearables.filter((wearable) => {
-          if (
-            collectionId &&
-            collectionId !== "*" &&
-            wearable.collectionId !== collectionId
-          ) {
-            return false;
-          }
-          if (!matchers) {
-            return true;
-          }
-          for (const matcher of matchers) {
-            const key = matcherNamesToKey[matcher.name];
-            if (!key) return false;
-            if (matcher.exact) {
-              if (wearable[key] !== matcher.value) {
-                return false;
-              }
-            } else {
-              if (!wearable[key].includes(matcher.value)) {
-                return false;
+        return db.wearables
+          .filter((wearable) => {
+            if (
+              collectionId &&
+              collectionId !== "*" &&
+              wearable.collectionId !== collectionId
+            ) {
+              return false;
+            }
+            if (!matchers) {
+              return true;
+            }
+            for (const matcher of matchers) {
+              const key = matcherNamesToKey[matcher.name];
+              if (!key) return false;
+              if (matcher.exact) {
+                if (wearable[key] !== matcher.value) {
+                  return false;
+                }
+              } else {
+                if (!wearable[key].includes(matcher.value)) {
+                  return false;
+                }
               }
             }
-          }
-          return true;
-        });
+            return true;
+          })
+          .sort(sortAscending);
       }
 
       function queryCollections(query) {
@@ -1631,6 +1633,10 @@
             collection.image = `https://arweave.net/YgdXdtgECPF5wcOpVgKVHqgYTVdayKGdq-KQoQS7LqY/${collection.id}.png`;
           }
         }
+      }
+
+      function sortAscending(a, b) {
+        return a.sort - b.sort;
       }
 
       function initWearables() {

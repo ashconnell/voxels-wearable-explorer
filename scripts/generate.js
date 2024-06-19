@@ -44,6 +44,7 @@ const run = async () => {
       externalUrl: meta.external_url,
       tokenId,
       collectionId,
+      sort: parseInt(tokenId),
     };
     if (!stats.rarity[wearable.rarity]) {
       stats.rarity[wearable.rarity] = 0;
